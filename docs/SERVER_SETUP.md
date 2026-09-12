@@ -43,6 +43,9 @@ ssh root@144.31.192.91 "bash /tmp/server_bootstrap.sh"
 ```env
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_ALLOWED_USER_IDS=
+TELEGRAM_TASK_QUEUE_SIZE=2
+TELEGRAM_TASK_TIMEOUT=300
+TELEGRAM_PROGRESS_INTERVAL=5
 ```
 
 Запуск вручную:
@@ -59,6 +62,10 @@ python telegram_bot.py
 cd /opt/skynet
 bash scripts/install_telegram_bot_service.sh
 ```
+
+В Telegram доступны `/mode` с кнопками режимов Авто, Кодеры, Маркетинг и
+Дизайн, а также `/status`. Во время выполнения задачи бот обновляет сообщение
+с процентом готовности.
 
 ## 3. Запустить SKYNET
 
@@ -84,7 +91,7 @@ python run.py "создай лендинг для ИИ-агентства: бе�
 
 ```env
 SKYNET_MODE=local
-LOCAL_DEFAULT_MODEL=ollama/llama3.1:8b
+LOCAL_DEFAULT_MODEL=ollama/llama3.2:1b
 ```
 
 Claude Pro не используется как API. Его можно применять отдельно через Claude Web/Claude Code для ручного усиления сложных задач.

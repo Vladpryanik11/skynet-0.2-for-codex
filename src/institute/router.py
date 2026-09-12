@@ -60,8 +60,17 @@ def classify_department(user_request: str) -> str:
     )
 
 
-def route_and_run(user_request: str) -> str:
-    department = classify_department(user_request)
+def normalize_department_override(department_override: str | None) -> str | None:
+    if not department_override:
+        return None
+    department = department_override.strip().lower()
+    if department not in DEPARTMENTS:
+        raise ValueError(f"Неизвестный отдел: {department_override}. Известные отделы: {list(DEPARTMENTS)}")
+    return department
+
+
+def route_and_run(user_request: str, department_override: str | None = None) -> str:
+    department = normalize_department_override(department_override) or classify_department(user_request)
     print(f"[Институт] Запрос направлен в отдел: {department}")
     store = RunStore()
     manifest = store.start(user_request, department)

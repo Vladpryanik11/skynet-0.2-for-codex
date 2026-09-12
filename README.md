@@ -119,7 +119,7 @@ CrewAI memory (`ENABLE_CREW_MEMORY=1`) включается отдельно. В
 python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e .
 cp .env.example .env   # local-режим работает без ключей
-ollama pull llama3.1:8b
+ollama pull llama3.2:1b
 
 # Для cloud/hybrid с облачными моделями ключи добавляются отдельно:
 # ANTHROPIC_API_KEY=... или OPENAI_API_KEY=...
@@ -144,6 +144,8 @@ python main.py "агент, который парсит прайс-листы п
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_ALLOWED_USER_IDS=
 TELEGRAM_TASK_QUEUE_SIZE=20
+TELEGRAM_TASK_TIMEOUT=600
+TELEGRAM_PROGRESS_INTERVAL=5
 ```
 
 Запуск:
@@ -156,11 +158,13 @@ python telegram_bot.py
 
 - `/start` — подключение и краткая инструкция;
 - `/id` — показать `user_id` и `chat_id`;
-- `/mode` — текущий режим `local/cloud/hybrid`;
+- `/mode` — кнопки режимов работы: Авто, Кодеры, Маркетинг, Дизайн;
 - `/status` — текущая задача и очередь.
 
 Любое другое текстовое сообщение бот ставит в очередь как задачу для
-`python run.py`: диспетчер сам выбирает отдел, агенты выполняют работу, а бот
+агентов. В режиме Авто диспетчер сам выбирает отдел, а в ручных режимах бот
+сразу запускает выбранный отдел. Долгая задача выполняется в отдельном процессе:
+сам бот остается отзывчивым, обновляет сообщение с процентом готовности и
 присылает финальный ответ частями, если он длинный.
 
 ## Модели
