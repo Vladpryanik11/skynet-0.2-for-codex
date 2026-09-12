@@ -14,6 +14,20 @@ def test_local_mode_forces_local_model(monkeypatch):
     assert model_from_env("MISSING_MODEL", "anthropic/claude-sonnet-5") == "ollama/test-model"
 
 
+def test_local_mode_ignores_cloud_model_overrides(monkeypatch):
+    monkeypatch.setenv("SKYNET_MODE", "local")
+    monkeypatch.setenv("LOCAL_DEFAULT_MODEL", "ollama/local")
+    monkeypatch.setenv("CODERS_CODER_MODEL", "anthropic/claude-sonnet-5")
+    assert model_from_env("CODERS_CODER_MODEL", "anthropic/claude-sonnet-5") == "ollama/local"
+
+
+def test_local_mode_allows_explicit_ollama_role_model(monkeypatch):
+    monkeypatch.setenv("SKYNET_MODE", "local")
+    monkeypatch.setenv("LOCAL_DEFAULT_MODEL", "ollama/default")
+    monkeypatch.setenv("CODERS_CODER_MODEL", "ollama/qwen2.5-coder:7b")
+    assert model_from_env("CODERS_CODER_MODEL", "anthropic/claude-sonnet-5") == "ollama/qwen2.5-coder:7b"
+
+
 def test_hybrid_without_keys_falls_back_to_local_model(monkeypatch):
     monkeypatch.setenv("SKYNET_MODE", "hybrid")
     monkeypatch.setenv("LOCAL_DEFAULT_MODEL", "ollama/local")

@@ -27,10 +27,14 @@ def anthropic_available() -> bool:
 
 
 def model_from_env(env_var: str, default: str) -> str:
+    if skynet_mode() == "local":
+        configured = os.environ.get(env_var, "").strip()
+        if configured.startswith(("ollama/", "ollama_chat/")):
+            return configured
+        return os.environ.get("LOCAL_DEFAULT_MODEL", "ollama/llama3.1:8b")
+
     if env_var in os.environ and os.environ[env_var].strip():
         return os.environ[env_var].strip()
-    if skynet_mode() == "local":
-        return os.environ.get("LOCAL_DEFAULT_MODEL", "ollama/llama3.1:8b")
     if skynet_mode() == "hybrid" and not cloud_available():
         return os.environ.get("LOCAL_DEFAULT_MODEL", "ollama/llama3.1:8b")
     return default
