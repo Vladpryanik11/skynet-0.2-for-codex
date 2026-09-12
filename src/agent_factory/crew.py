@@ -1,7 +1,6 @@
 import os
 
 from crewai import Agent, Crew, LLM, Process, Task
-from crewai.knowledge.source.text_file_knowledge_source import TextFileKnowledgeSource
 from crewai.project import CrewBase, agent, before_kickoff, crew, task
 
 from agent_factory.models import ReviewVerdict
@@ -13,11 +12,21 @@ from agent_factory.tools import (
 )
 from institute.eval_tools import JudgeOutputTool
 from institute.learning_tools import RecordLessonTool
+from institute.knowledge import knowledge_sources_for
+from institute.local_mode import model_from_env
+from institute.runtime import agent_runtime_kwargs, crew_memory_enabled
 from institute.tracing import make_task_tracer
 
 
 def _llm(env_var: str, default: str) -> LLM:
-    return LLM(model=os.environ.get(env_var, default))
+    model = model_from_env(env_var, default)
+    if model.startswith(("ollama/", "ollama_chat/")):
+        return LLM(
+            model=model,
+            is_litellm=True,
+            base_url=os.environ.get("OLLAMA_API_BASE", "http://127.0.0.1:11434"),
+        )
+    return LLM(model=model)
 
 
 def _record_review_verdict(task_output) -> None:
@@ -46,15 +55,6 @@ class AgentFactoryCrew:
         clear_review_verdict()
         return inputs
 
-    # --- Менеджер (НЕ входит в agents крю, используется как manager_agent) ---
-    def orchestrator_agent(self) -> Agent:
-        return Agent(
-            config=self.agents_config["orchestrator"],
-            llm=_llm("CODERS_ORCHESTRATOR_MODEL", "anthropic/claude-sonnet-5"),
-            allow_delegation=True,
-            verbose=True,
-        )
-
     # --- Рабочие агенты ---
     @agent
     def architect(self) -> Agent:
@@ -62,6 +62,7 @@ class AgentFactoryCrew:
             config=self.agents_config["architect"],
             llm=_llm("CODERS_ARCHITECT_MODEL", "anthropic/claude-opus-5"),
             verbose=True,
+            **agent_runtime_kwargs(),
         )
 
     @agent
@@ -70,6 +71,7 @@ class AgentFactoryCrew:
             config=self.agents_config["researcher"],
             llm=_llm("CODERS_RESEARCHER_MODEL", "openai/gpt-5"),
             verbose=True,
+            **agent_runtime_kwargs(),
         )
 
     @agent
@@ -79,6 +81,7 @@ class AgentFactoryCrew:
             llm=_llm("CODERS_CODER_MODEL", "anthropic/claude-sonnet-5"),
             tools=[SaveGeneratedAgentTool()],
             verbose=True,
+            **agent_runtime_kwargs(),
         )
 
     @agent
@@ -88,6 +91,7 @@ class AgentFactoryCrew:
             llm=_llm("CODERS_REVIEWER_MODEL", "anthropic/claude-sonnet-5"),
             tools=[PythonSyntaxCheckTool()],
             verbose=True,
+            **agent_runtime_kwargs(),
         )
 
     @agent
@@ -97,6 +101,7 @@ class AgentFactoryCrew:
             llm=_llm("CODERS_DEVOPS_MODEL", "openai/gpt-5-mini"),
             tools=[DeployGeneratedAgentTool()],
             verbose=True,
+            **agent_runtime_kwargs(),
         )
 
     @agent
@@ -106,6 +111,7 @@ class AgentFactoryCrew:
             llm=_llm("CODERS_LEARNER_MODEL", "anthropic/claude-haiku-4-5"),
             tools=[JudgeOutputTool(), RecordLessonTool(department="coders")],
             verbose=True,
+            **agent_runtime_kwargs(),
         )
 
     # --- Задачи ---
@@ -142,10 +148,9 @@ class AgentFactoryCrew:
         return Crew(
             agents=self.agents,  # architect, researcher, coder, reviewer, devops, learner
             tasks=self.tasks,
-            process=Process.hierarchical,
-            manager_agent=self.orchestrator_agent(),
-            memory=True,
-            knowledge_sources=[TextFileKnowledgeSource(file_paths=["coders_lessons.md"])],
+            process=Process.sequential,
+            memory=crew_memory_enabled(),
+            knowledge_sources=knowledge_sources_for("coders"),
             task_callback=make_task_tracer("coders"),
             verbose=True,
         )

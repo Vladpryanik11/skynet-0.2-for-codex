@@ -1,0 +1,56 @@
+requirements_check_task:
+  description: >
+    Проверь, насколько итоговый результат соответствует исходному запросу.
+
+    Проверенные уроки предыдущих проверок:
+    {department_knowledge}
+
+    Исходный запрос:
+    "{user_request}"
+
+    Итоговый результат:
+    "{final_output}"
+  expected_output: >
+    Markdown-разбор: что выполнено, что пропущено, где задача подменена,
+    какие уточнения или доработки нужны.
+  agent: requirements_auditor
+
+risk_check_task:
+  description: >
+    Проверь итоговый результат на риски: выдуманные факты, опасные инструкции,
+    небезопасный код/деплой, утечки секретов, юридические/репутационные
+    риски, слишком уверенные утверждения без оснований.
+  expected_output: >
+    Список рисков по уровням: Critical, Major, Minor. Если рисков нет,
+    напиши "критичных рисков не обнаружено".
+  agent: risk_reviewer
+  context:
+    - requirements_check_task
+
+final_verdict_task:
+  description: >
+    Сначала вызови judge_final_output для независимой оценки исходного
+    результата. Затем объедини аудит требований, риск-ревью и оценку судьи.
+    Верни финальный вердикт:
+    - APPROVED, если результат можно отдавать пользователю;
+    - CHANGES_REQUESTED, если нужна доработка.
+
+    Если правки небольшие, приложи улучшенную версию финального ответа.
+  expected_output: >
+    Markdown с разделами: Verdict, Score, Critical Issues, Suggested Final Output.
+  agent: final_editor
+  context:
+    - requirements_check_task
+    - risk_check_task
+
+reflect_task:
+  description: >
+    Извлеки 1-2 конкретных урока для будущих проверок качества и сохрани каждый
+    через record_lesson. Если новых уроков нет, напиши "новых уроков нет".
+  expected_output: >
+    Список сохранённых уроков или "новых уроков нет".
+  agent: learner
+  context:
+    - requirements_check_task
+    - risk_check_task
+    - final_verdict_task

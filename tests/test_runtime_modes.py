@@ -1,0 +1,29 @@
+from institute.local_mode import cloud_available, local_only, model_from_env, skynet_mode
+
+
+def test_mode_defaults_to_hybrid(monkeypatch):
+    monkeypatch.delenv("SKYNET_MODE", raising=False)
+    monkeypatch.delenv("LOCAL_ONLY", raising=False)
+    assert skynet_mode() == "hybrid"
+
+
+def test_local_mode_forces_local_model(monkeypatch):
+    monkeypatch.setenv("SKYNET_MODE", "local")
+    monkeypatch.setenv("LOCAL_DEFAULT_MODEL", "ollama/test-model")
+    assert local_only() is True
+    assert model_from_env("MISSING_MODEL", "anthropic/claude-sonnet-5") == "ollama/test-model"
+
+
+def test_hybrid_without_keys_falls_back_to_local_model(monkeypatch):
+    monkeypatch.setenv("SKYNET_MODE", "hybrid")
+    monkeypatch.setenv("LOCAL_DEFAULT_MODEL", "ollama/local")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    assert cloud_available() is False
+    assert model_from_env("MISSING_MODEL", "anthropic/claude-sonnet-5") == "ollama/local"
+
+
+def test_cloud_mode_uses_cloud_default_when_key_exists(monkeypatch):
+    monkeypatch.setenv("SKYNET_MODE", "cloud")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    assert model_from_env("MISSING_MODEL", "anthropic/claude-sonnet-5") == "anthropic/claude-sonnet-5"

@@ -23,45 +23,36 @@ def _llm(env_var: str, default: str) -> LLM:
 
 
 @CrewBase
-class MarketingCrew:
-    """Отдел маркетинга: превращает запрос в бриф, пишет текст,
-    при необходимости добавляет SEO и финально вычитывает."""
+class QualityControlCrew:
+    """Отдел контроля качества: проверяет итог другого отдела перед выдачей."""
 
     agents_config = "config/agents.yaml"
     tasks_config = "config/tasks.yaml"
 
     @agent
-    def strategist(self) -> Agent:
+    def requirements_auditor(self) -> Agent:
         return Agent(
-            config=self.agents_config["strategist"],
-            llm=_llm("STRATEGIST_MODEL", "anthropic/claude-sonnet-5"),
+            config=self.agents_config["requirements_auditor"],
+            llm=_llm("QC_REQUIREMENTS_MODEL", "anthropic/claude-sonnet-5"),
             verbose=True,
             **agent_runtime_kwargs(),
         )
 
     @agent
-    def copywriter(self) -> Agent:
+    def risk_reviewer(self) -> Agent:
         return Agent(
-            config=self.agents_config["copywriter"],
-            llm=_llm("COPYWRITER_MODEL", "anthropic/claude-opus-5"),
+            config=self.agents_config["risk_reviewer"],
+            llm=_llm("QC_RISK_MODEL", "anthropic/claude-sonnet-5"),
             verbose=True,
             **agent_runtime_kwargs(),
         )
 
     @agent
-    def seo_specialist(self) -> Agent:
+    def final_editor(self) -> Agent:
         return Agent(
-            config=self.agents_config["seo_specialist"],
-            llm=_llm("SEO_MODEL", "anthropic/claude-sonnet-5"),
-            verbose=True,
-            **agent_runtime_kwargs(),
-        )
-
-    @agent
-    def editor(self) -> Agent:
-        return Agent(
-            config=self.agents_config["editor"],
-            llm=_llm("EDITOR_MODEL", "anthropic/claude-sonnet-5"),
+            config=self.agents_config["final_editor"],
+            llm=_llm("QC_FINAL_EDITOR_MODEL", "anthropic/claude-sonnet-5"),
+            tools=[JudgeOutputTool()],
             verbose=True,
             **agent_runtime_kwargs(),
         )
@@ -70,27 +61,23 @@ class MarketingCrew:
     def learner(self) -> Agent:
         return Agent(
             config=self.agents_config["learner"],
-            llm=_llm("MARKETING_LEARNER_MODEL", "anthropic/claude-haiku-4-5"),
-            tools=[JudgeOutputTool(), RecordLessonTool(department="marketing")],
+            llm=_llm("QC_LEARNER_MODEL", "anthropic/claude-haiku-4-5"),
+            tools=[RecordLessonTool(department="quality_control")],
             verbose=True,
             **agent_runtime_kwargs(),
         )
 
     @task
-    def brief_task(self) -> Task:
-        return Task(config=self.tasks_config["brief_task"])
+    def requirements_check_task(self) -> Task:
+        return Task(config=self.tasks_config["requirements_check_task"])
 
     @task
-    def draft_copy_task(self) -> Task:
-        return Task(config=self.tasks_config["draft_copy_task"])
+    def risk_check_task(self) -> Task:
+        return Task(config=self.tasks_config["risk_check_task"])
 
     @task
-    def seo_task(self) -> Task:
-        return Task(config=self.tasks_config["seo_task"])
-
-    @task
-    def edit_task(self) -> Task:
-        return Task(config=self.tasks_config["edit_task"])
+    def final_verdict_task(self) -> Task:
+        return Task(config=self.tasks_config["final_verdict_task"])
 
     @task
     def reflect_task(self) -> Task:
@@ -99,11 +86,11 @@ class MarketingCrew:
     @crew
     def crew(self) -> Crew:
         return Crew(
-            agents=self.agents,  # strategist, copywriter, seo_specialist, editor, learner
+            agents=self.agents,
             tasks=self.tasks,
             process=Process.sequential,
             memory=crew_memory_enabled(),
-            knowledge_sources=knowledge_sources_for("marketing"),
-            task_callback=make_task_tracer("marketing"),
+            knowledge_sources=knowledge_sources_for("quality_control"),
+            task_callback=make_task_tracer("quality_control"),
             verbose=True,
         )

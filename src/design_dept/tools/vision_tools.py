@@ -2,9 +2,10 @@ import base64
 import mimetypes
 import os
 
-import anthropic
 from crewai.tools import BaseTool
 from pydantic import BaseModel
+
+from institute.local_mode import anthropic_available
 
 REFERENCES_DIR = os.environ.get("REFERENCES_DIR", "./references")
 SUPPORTED_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
@@ -42,6 +43,15 @@ class AnalyzeReferencesTool(BaseTool):
                 "Сохраните туда скриншоты референсов и повтори."
             )
 
+        if not anthropic_available():
+            names = ", ".join(files)
+            return (
+                "Vision-анализ изображений отключён: режим local/hybrid работает без "
+                "ANTHROPIC_API_KEY. Найдены файлы: "
+                f"{names}. Опишите словами, что нравится в каждом референсе, или "
+                "переключите SKYNET_MODE=cloud/hybrid и добавьте ANTHROPIC_API_KEY."
+            )
+
         content = [
             {
                 "type": "text",
@@ -67,6 +77,8 @@ class AnalyzeReferencesTool(BaseTool):
                     "source": {"type": "base64", "media_type": media_type, "data": data},
                 }
             )
+
+        import anthropic
 
         client = anthropic.Anthropic()
         response = client.messages.create(

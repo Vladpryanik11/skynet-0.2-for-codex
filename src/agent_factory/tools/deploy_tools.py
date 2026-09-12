@@ -6,6 +6,7 @@ from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from agent_factory.state import read_review_verdict
+from institute.safety import build_env_args, resolve_inside_dir, safe_docker_tag
 
 DOCKERFILE_TEMPLATE = textwrap.dedent(
     """\
@@ -50,20 +51,24 @@ class DeployGeneratedAgentTool(BaseTool):
             return f"ОШИБКА: деплой заблокирован — ревью вернуло CHANGES_REQUESTED ({issues})."
 
         output_dir = os.path.abspath(os.environ.get("OUTPUT_DIR", "./generated_agents"))
-        agent_path = os.path.join(output_dir, os.path.basename(agent_filename))
+        try:
+            agent_path = resolve_inside_dir(output_dir, agent_filename)
+        except ValueError as exc:
+            return f"ОШИБКА: небезопасный путь к агенту: {exc}"
         if not os.path.isfile(agent_path):
             return (
                 f"ОШИБКА: файл агента не найден: {agent_path}. "
                 "Сначала сохрани код инструментом save_generated_agent."
             )
 
-        bundle_name = "_bundle_" + os.path.splitext(os.path.basename(agent_filename))[0]
+        bundle_name = "_bundle_" + os.path.splitext(os.path.basename(agent_path))[0]
         bundle_dir = os.path.join(output_dir, bundle_name)
         os.makedirs(bundle_dir, exist_ok=True)
 
         with open(agent_path, "r", encoding="utf-8") as src:
             code = src.read()
-        with open(os.path.join(bundle_dir, os.path.basename(agent_filename)), "w", encoding="utf-8") as dst:
+        agent_basename = os.path.basename(agent_path)
+        with open(os.path.join(bundle_dir, agent_basename), "w", encoding="utf-8") as dst:
             dst.write(code)
 
         requirements = ["crewai", "python-dotenv"]
@@ -72,11 +77,11 @@ class DeployGeneratedAgentTool(BaseTool):
         with open(os.path.join(bundle_dir, "requirements.txt"), "w", encoding="utf-8") as f:
             f.write("\n".join(requirements) + "\n")
 
-        dockerfile = DOCKERFILE_TEMPLATE.format(agent_filename=os.path.basename(agent_filename))
+        dockerfile = DOCKERFILE_TEMPLATE.format(agent_filename=agent_basename)
         with open(os.path.join(bundle_dir, "Dockerfile"), "w", encoding="utf-8") as f:
             f.write(dockerfile)
 
-        safe_tag = "".join(c if c.isalnum() or c in "-_." else "-" for c in image_tag.lower())
+        safe_tag = safe_docker_tag(image_tag)
 
         try:
             build = subprocess.run(
@@ -93,11 +98,29 @@ class DeployGeneratedAgentTool(BaseTool):
         if build.returncode != 0:
             return f"ОШИБКА docker build:\n{build.stderr[-2000:]}"
 
-        env_file_arg = ["--env-file", ".env"] if os.path.isfile(".env") else []
+        env_args = build_env_args()
+        memory_limit = os.environ.get("GENERATED_AGENT_MEMORY", "512m")
+        cpu_limit = os.environ.get("GENERATED_AGENT_CPUS", "1.0")
+        network_mode = os.environ.get("GENERATED_AGENT_NETWORK", "bridge")
 
         try:
             run = subprocess.run(
-                ["docker", "run", "-d", "--rm", "--name", safe_tag, *env_file_arg, safe_tag],
+                [
+                    "docker",
+                    "run",
+                    "-d",
+                    "--rm",
+                    "--name",
+                    safe_tag,
+                    "--memory",
+                    memory_limit,
+                    "--cpus",
+                    cpu_limit,
+                    "--network",
+                    network_mode,
+                    *env_args,
+                    safe_tag,
+                ],
                 capture_output=True,
                 text=True,
                 timeout=60,
