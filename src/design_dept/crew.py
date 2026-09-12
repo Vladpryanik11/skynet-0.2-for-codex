@@ -5,7 +5,9 @@ from crewai.knowledge.source.text_file_knowledge_source import TextFileKnowledge
 from crewai.project import CrewBase, agent, crew, task
 
 from design_dept.tools import AnalyzeReferencesTool, SaveDesignFileTool
+from institute.eval_tools import JudgeOutputTool
 from institute.learning_tools import RecordLessonTool
+from institute.tracing import make_task_tracer
 
 
 def _llm(env_var: str, default: str) -> LLM:
@@ -68,7 +70,7 @@ class DesignCrew:
         return Agent(
             config=self.agents_config["learner"],
             llm=_llm("DESIGN_LEARNER_MODEL", "anthropic/claude-haiku-4-5"),
-            tools=[RecordLessonTool(department="design")],
+            tools=[JudgeOutputTool(), RecordLessonTool(department="design")],
             verbose=True,
         )
 
@@ -102,5 +104,6 @@ class DesignCrew:
             manager_agent=self.department_orchestrator_agent(),
             memory=True,
             knowledge_sources=[TextFileKnowledgeSource(file_paths=["design_lessons.md"])],
+            task_callback=make_task_tracer("design"),
             verbose=True,
         )

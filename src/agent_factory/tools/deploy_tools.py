@@ -5,6 +5,8 @@ import textwrap
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from agent_factory.state import read_review_verdict
+
 DOCKERFILE_TEMPLATE = textwrap.dedent(
     """\
     FROM python:3.12-slim
@@ -33,12 +35,20 @@ class DeployGeneratedAgentTool(BaseTool):
         "Собирает Docker-образ для сгенерированного агента (docker build) и "
         "запускает контейнер (docker run -d) с переменными окружения из .env "
         "фабрики (если файл .env есть в текущей директории). Требует "
-        "установленный и запущенный Docker на хосте. Используй ТОЛЬКО после "
-        "вердикта APPROVED от ревьюера — иначе не вызывай этот инструмент."
+        "установленный и запущенный Docker на хосте. Инструмент САМ проверяет "
+        "реальный вердикт ревью (не доверяет тому, что скажет вызывающий агент) "
+        "и физически откажется деплоить, если ревью не APPROVED."
     )
     args_schema: type[BaseModel] = DeployAgentInput
 
     def _run(self, agent_filename: str, image_tag: str, extra_requirements: str = "") -> str:
+        verdict = read_review_verdict()
+        if verdict is None:
+            return "ОШИБКА: деплой заблокирован — вердикт ревью ещё не зафиксирован в этом прогоне."
+        if verdict["verdict"] != "APPROVED":
+            issues = "; ".join(verdict.get("issues") or []) or "без деталей"
+            return f"ОШИБКА: деплой заблокирован — ревью вернуло CHANGES_REQUESTED ({issues})."
+
         output_dir = os.path.abspath(os.environ.get("OUTPUT_DIR", "./generated_agents"))
         agent_path = os.path.join(output_dir, os.path.basename(agent_filename))
         if not os.path.isfile(agent_path):

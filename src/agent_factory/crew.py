@@ -2,18 +2,35 @@ import os
 
 from crewai import Agent, Crew, LLM, Process, Task
 from crewai.knowledge.source.text_file_knowledge_source import TextFileKnowledgeSource
-from crewai.project import CrewBase, agent, crew, task
+from crewai.project import CrewBase, agent, before_kickoff, crew, task
 
+from agent_factory.models import ReviewVerdict
+from agent_factory.state import clear_review_verdict, write_review_verdict
 from agent_factory.tools import (
     DeployGeneratedAgentTool,
     PythonSyntaxCheckTool,
     SaveGeneratedAgentTool,
 )
+from institute.eval_tools import JudgeOutputTool
 from institute.learning_tools import RecordLessonTool
+from institute.tracing import make_task_tracer
 
 
 def _llm(env_var: str, default: str) -> LLM:
     return LLM(model=os.environ.get(env_var, default))
+
+
+def _record_review_verdict(task_output) -> None:
+    """callback на review_code_task: пишет структурированный вердикт в
+    .state/, откуда его без доверия к агенту читает DeployGeneratedAgentTool."""
+    verdict_obj = getattr(task_output, "pydantic", None)
+    if verdict_obj is None:
+        write_review_verdict(
+            "CHANGES_REQUESTED",
+            ["Ревьюер не вернул структурированный вердикт — деплой заблокирован для безопасности."],
+        )
+        return
+    write_review_verdict(verdict_obj.verdict, verdict_obj.issues)
 
 
 @CrewBase
@@ -23,6 +40,11 @@ class AgentFactoryCrew:
 
     agents_config = "config/agents.yaml"
     tasks_config = "config/tasks.yaml"
+
+    @before_kickoff
+    def _reset_state(self, inputs):
+        clear_review_verdict()
+        return inputs
 
     # --- Менеджер (НЕ входит в agents крю, используется как manager_agent) ---
     def orchestrator_agent(self) -> Agent:
@@ -82,7 +104,7 @@ class AgentFactoryCrew:
         return Agent(
             config=self.agents_config["learner"],
             llm=_llm("CODERS_LEARNER_MODEL", "anthropic/claude-haiku-4-5"),
-            tools=[RecordLessonTool(department="coders")],
+            tools=[JudgeOutputTool(), RecordLessonTool(department="coders")],
             verbose=True,
         )
 
@@ -101,7 +123,11 @@ class AgentFactoryCrew:
 
     @task
     def review_code_task(self) -> Task:
-        return Task(config=self.tasks_config["review_code_task"])
+        return Task(
+            config=self.tasks_config["review_code_task"],
+            output_pydantic=ReviewVerdict,
+            callback=_record_review_verdict,
+        )
 
     @task
     def prepare_deploy_task(self) -> Task:
@@ -120,5 +146,6 @@ class AgentFactoryCrew:
             manager_agent=self.orchestrator_agent(),
             memory=True,
             knowledge_sources=[TextFileKnowledgeSource(file_paths=["coders_lessons.md"])],
+            task_callback=make_task_tracer("coders"),
             verbose=True,
         )

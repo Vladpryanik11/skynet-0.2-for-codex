@@ -4,7 +4,9 @@ from crewai import Agent, Crew, LLM, Process, Task
 from crewai.knowledge.source.text_file_knowledge_source import TextFileKnowledgeSource
 from crewai.project import CrewBase, agent, crew, task
 
+from institute.eval_tools import JudgeOutputTool
 from institute.learning_tools import RecordLessonTool
+from institute.tracing import make_task_tracer
 
 
 def _llm(env_var: str, default: str) -> LLM:
@@ -64,7 +66,7 @@ class MarketingCrew:
         return Agent(
             config=self.agents_config["learner"],
             llm=_llm("MARKETING_LEARNER_MODEL", "anthropic/claude-haiku-4-5"),
-            tools=[RecordLessonTool(department="marketing")],
+            tools=[JudgeOutputTool(), RecordLessonTool(department="marketing")],
             verbose=True,
         )
 
@@ -97,5 +99,6 @@ class MarketingCrew:
             manager_agent=self.department_orchestrator_agent(),
             memory=True,
             knowledge_sources=[TextFileKnowledgeSource(file_paths=["marketing_lessons.md"])],
+            task_callback=make_task_tracer("marketing"),
             verbose=True,
         )
