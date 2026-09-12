@@ -25,8 +25,8 @@ ssh root@144.31.192.91
 На сервере:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Vladpryanik11/SKYNET-0.1/main/scripts/server_bootstrap.sh -o /tmp/server_bootstrap.sh
-bash /tmp/server_bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/Vladpryanik11/skynet-0.2-for-codex/main/scripts/server_bootstrap.sh -o /tmp/server_bootstrap.sh
+REPO_URL=https://github.com/Vladpryanik11/skynet-0.2-for-codex.git bash /tmp/server_bootstrap.sh
 ```
 
 Если файла ещё нет в GitHub, загрузи локальную версию:
@@ -34,6 +34,30 @@ bash /tmp/server_bootstrap.sh
 ```powershell
 scp scripts/server_bootstrap.sh root@144.31.192.91:/tmp/server_bootstrap.sh
 ssh root@144.31.192.91 "bash /tmp/server_bootstrap.sh"
+```
+
+## Telegram-бот
+
+После базовой установки добавь токен в `/opt/skynet/.env`:
+
+```env
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_ALLOWED_USER_IDS=
+```
+
+Запуск вручную:
+
+```bash
+cd /opt/skynet
+source .venv/bin/activate
+python telegram_bot.py
+```
+
+Автозапуск через systemd:
+
+```bash
+cd /opt/skynet
+bash scripts/install_telegram_bot_service.sh
 ```
 
 ## 3. Запустить SKYNET

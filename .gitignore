@@ -5,6 +5,7 @@ __pycache__/
 generated_agents/
 generated_designs/
 traces/
+runs/
 .state/
 
 # Настройки самого ИИ-помощника (скиллы Claude Code) — не часть проекта

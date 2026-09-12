@@ -1,5 +1,6 @@
 crewai[tools,litellm]>=0.130.0
 python-dotenv>=1.0.1
+python-telegram-bot>=21.0,<23.0
 pyyaml>=6.0.1
 anthropic>=0.40.0
 pydantic>=2.0.0

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-/opt/skynet}"
-REPO_URL="${REPO_URL:-https://github.com/Vladpryanik11/SKYNET-0.1.git}"
+REPO_URL="${REPO_URL:-https://github.com/Vladpryanik11/skynet-0.2-for-codex.git}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 echo "[1/8] Updating system packages"
@@ -43,7 +43,10 @@ python -m pip install --upgrade pip
 pip install -e .
 
 echo "[7/8] Writing local/hybrid .env"
-cat > .env <<'ENV'
+if [ -f .env ]; then
+  cp .env ".env.backup.$(date +%Y%m%d%H%M%S)"
+else
+  cat > .env <<'ENV'
 SKYNET_MODE=local
 LOCAL_DEFAULT_MODEL=ollama/llama3.1:8b
 DEFAULT_DEPARTMENT=design
@@ -61,16 +64,23 @@ REFERENCES_DIR=./references
 DESIGN_OUTPUT_DIR=./generated_designs
 OUTPUT_DIR=./generated_agents
 TRACES_DIR=./traces
+RUNS_DIR=./runs
 STATE_DIR=./.state
+
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_ALLOWED_USER_IDS=
+TELEGRAM_TASK_QUEUE_SIZE=20
 
 GENERATED_AGENT_ENV_ALLOWLIST=ANTHROPIC_API_KEY,OPENAI_API_KEY,SERPER_API_KEY
 GENERATED_AGENT_MEMORY=512m
 GENERATED_AGENT_CPUS=1.0
 GENERATED_AGENT_NETWORK=bridge
 ENV
+fi
 
 echo "[8/8] Done"
 echo "Run:"
 echo "  cd $APP_DIR"
 echo "  source .venv/bin/activate"
 echo "  python run.py \"создай лендинг для ИИ-агентства\""
+echo "  python telegram_bot.py"
