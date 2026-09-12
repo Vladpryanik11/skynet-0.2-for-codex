@@ -1,0 +1,91 @@
+design_spec_task:
+  description: >
+    Пользователь хочет нового агента со следующим запросом:
+
+    "{user_request}"
+
+    Разложи это в спецификацию: role, goal, backstory, список нужных
+    инструментов (встроенные crewai_tools или кастомные — опиши, что
+    каждый должен делать), рекомендуемую модель (Claude или GPT и почему),
+    критерии приёмки (когда считать агента готовым).
+  expected_output: >
+    Структурированная спецификация агента в Markdown с разделами:
+    Role, Goal, Backstory, Tools, Recommended Model, Acceptance Criteria.
+  agent: architect
+
+research_task:
+  description: >
+    На основе спецификации найди/предложи актуальные (2026) готовые
+    инструменты, MCP-серверы, промпт-паттерны и примеры кода, применимые
+    к этой спецификации. Не ищи то, что не относится к спецификации.
+  expected_output: >
+    Список из 3-6 конкретных рекомендаций (инструмент/паттерн/пример) с
+    кратким обоснованием, почему это подходит именно этому агенту.
+  agent: researcher
+  context:
+    - design_spec_task
+
+generate_agent_code_task:
+  description: >
+    Используя спецификацию Архитектора и находки Исследователя, напиши
+    ПОЛНЫЙ рабочий Python-код нового агента на CrewAI: определение Agent,
+    Task(и), Crew и точку входа kickoff(). Код должен запускаться сразу
+    после `pip install crewai` и указания API-ключа в .env, без
+    хардкода секретов. Комментарии — только там, где решение неочевидно.
+  expected_output: >
+    Один блок кода Python (весь файл целиком), готовый к сохранению как
+    agent.py, плюс отдельно строка requirements, если нужны доп. пакеты.
+  agent: coder
+  context:
+    - design_spec_task
+    - research_task
+
+review_code_task:
+  description: >
+    Проверь код от Кодера: 1) валиден ли Python-синтаксис, 2) соответствует
+    ли спецификации Архитектора, 3) нет ли опасных операций (произвольный
+    shell/eval, захардкоженные ключи), 4) осмысленны ли role/goal/backstory
+    и промпты задач. Если есть проблемы — опиши их конкретно, с указанием
+    строки/фрагмента и предложи исправление.
+  expected_output: >
+    Вердикт APPROVED или CHANGES_REQUESTED, и под ним — список конкретных
+    замечаний (если есть) либо подтверждение готовности к деплою.
+  agent: reviewer
+  context:
+    - design_spec_task
+    - generate_agent_code_task
+
+prepare_deploy_task:
+  description: >
+    Проверь вердикт Ревьюера. Если CHANGES_REQUESTED — НЕ вызывай
+    deploy_generated_agent, а верни сообщение "Деплой заблокирован:
+    <причина по ревью>". Если APPROVED — вызови инструмент
+    deploy_generated_agent с именем файла, который Кодер сохранил через
+    save_generated_agent, и придуманным image_tag (короткое
+    осмысленное имя латиницей на основе задачи пользователя).
+  expected_output: >
+    Либо результат инструмента deploy_generated_agent (образ собран,
+    контейнер запущен, его container_id), либо сообщение "Деплой
+    заблокирован: <причина>", если ревью не пройдено.
+  agent: devops
+  context:
+    - review_code_task
+    - generate_agent_code_task
+
+reflect_task:
+  description: >
+    Просмотри весь ход выполнения этого запроса (спецификацию, находки
+    исследования, код, вердикт ревью, результат деплоя). Извлеки 1-3
+    конкретных урока, полезных для будущих похожих запросов на новых
+    агентов. Для каждого урока вызови инструмент record_lesson. Если
+    извлекать нечего — не вызывай инструмент и явно напиши "новых уроков
+    нет".
+  expected_output: >
+    Список сохранённых уроков (или "новых уроков нет").
+  agent: learner
+  context:
+    - design_spec_task
+    - research_task
+    - generate_agent_code_task
+    - review_code_task
+    - prepare_deploy_task

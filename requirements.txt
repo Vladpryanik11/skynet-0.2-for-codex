@@ -1,0 +1,4 @@
+crewai[tools]>=0.130.0
+python-dotenv>=1.0.1
+pyyaml>=6.0.1
+anthropic>=0.40.0

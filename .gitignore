@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+generated_agents/
+generated_designs/
+
+# Настройки самого ИИ-помощника (скиллы Claude Code) — не часть проекта
+.agents/
+.claude/

@@ -1,0 +1,584 @@
+<title>Институт SKYNET</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #eef2f6;
+    --grid: rgba(47, 93, 138, 0.09);
+    --surface: #ffffff;
+    --surface-2: #e4eaf1;
+    --ink: #16202c;
+    --muted: #566578;
+    --line: #c3d0dd;
+    --line-strong: #8fa3b8;
+    --accent: #2f5d8a;
+    --accent-ink: #ffffff;
+    --coders: #3457a6;
+    --marketing: #b4622f;
+    --design: #2f8f76;
+    --shadow: 0 1px 2px rgba(22, 32, 44, 0.06), 0 8px 24px -12px rgba(22, 32, 44, 0.18);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101c30;
+      --grid: rgba(127, 178, 229, 0.10);
+      --surface: #17273f;
+      --surface-2: #1d304a;
+      --ink: #eaf1fa;
+      --muted: #9fb4cc;
+      --line: #2c4468;
+      --line-strong: #46618a;
+      --accent: #8fc1f2;
+      --accent-ink: #0d1a2b;
+      --coders: #93b6f2;
+      --marketing: #eb9c6c;
+      --design: #7fe0c1;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 28px -14px rgba(0, 0, 0, 0.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101c30;
+    --grid: rgba(127, 178, 229, 0.10);
+    --surface: #17273f;
+    --surface-2: #1d304a;
+    --ink: #eaf1fa;
+    --muted: #9fb4cc;
+    --line: #2c4468;
+    --line-strong: #46618a;
+    --accent: #8fc1f2;
+    --accent-ink: #0d1a2b;
+    --coders: #93b6f2;
+    --marketing: #eb9c6c;
+    --design: #7fe0c1;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 28px -14px rgba(0, 0, 0, 0.55);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    line-height: 1.5;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+  }
+
+  .titleblock {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 16px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .titleblock h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .titleblock .meta {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.6;
+  }
+  .lede {
+    max-width: 62ch;
+    color: var(--muted);
+    font-size: 16px;
+    margin: 18px 0 40px;
+  }
+  .lede strong { color: var(--ink); }
+
+  .diagram-wrap {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: var(--shadow);
+    padding: 8px;
+  }
+  .diagram-wrap svg { display: block; min-width: 900px; }
+
+  figcaption {
+    margin: 10px 2px 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  section { margin-top: 48px; }
+  h2 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px 24px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .legend-item svg { flex: none; }
+  .legend-item b { color: var(--ink); font-weight: 500; }
+
+  .depts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .dept-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: var(--shadow);
+    padding: 22px 22px 20px;
+    border-top: 4px solid var(--dept-color);
+  }
+  .dept-card h3 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .dept-card .tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--dept-color);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .dept-card p {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 10px 0 0;
+  }
+  .dept-card .out {
+    margin-top: 14px;
+    font-size: 13px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line);
+    color: var(--ink);
+  }
+  .dept-card .out b { color: var(--muted); font-weight: 500; }
+
+  details {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: var(--shadow);
+    padding: 16px 22px;
+  }
+  details + details { margin-top: 12px; }
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 15px;
+    list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 8px;
+    color: var(--accent);
+    transition: transform 0.15s ease;
+  }
+  details[open] summary::before { transform: rotate(90deg); }
+  details p, details li { color: var(--muted); font-size: 14px; }
+  details code {
+    font-family: "IBM Plex Mono", monospace;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+  details ul { padding-left: 20px; margin: 8px 0; }
+
+  .callout {
+    background: var(--surface-2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 4px 4px 0;
+    padding: 16px 20px;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .callout b { color: var(--accent); }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="page">
+  <div class="titleblock">
+    <h1>Институт SKYNET</h1>
+    <div class="meta">
+      СХЕМА №1 — ОРГАНИЗАЦИЯ ОТДЕЛОВ<br>
+      Диспетчер + 3 отдела · hierarchical CrewAI
+    </div>
+  </div>
+
+  <p class="lede">
+    Один запрос — три возможных адреса. <strong>Диспетчер</strong> читает, что вы просите,
+    и передаёт задачу нужному отделу. Внутри каждого отдела свой начальник и цепочка
+    специалистов, которые работают строго по очереди, а в конце — «Аналитик самообучения»,
+    который запоминает, что сработало.
+  </p>
+
+  <figure>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 1180 660" role="img" aria-label="Диспетчер института направляет запрос в один из трёх отделов — Кодеры, Маркетинг или Дизайн. Внутри каждого отдела менеджер делегирует работу цепочке специалистов, последний из которых — аналитик самообучения — сохраняет уроки в локальную базу знаний, которая дугой возвращается наверх и учитывается в следующем запуске того же отдела.">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <!-- Dispatcher -->
+        <g class="mono">
+          <rect x="40" y="20" width="1100" height="60" rx="4"
+                fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+          <text x="60" y="44" font-family="IBM Plex Sans" font-size="15" font-weight="600" fill="var(--ink)">Диспетчер института</text>
+          <text x="60" y="64" font-family="IBM Plex Mono" font-size="11" fill="var(--muted)">router.py · classify_department() · дешёвая модель (Haiku)</text>
+        </g>
+
+        <!-- Dispatcher -> lane arrows, labeled -->
+        <g stroke="var(--ink)" stroke-width="1.5" fill="none">
+          <line x1="210" y1="80" x2="210" y2="108" marker-end="url(#arrow)" color="var(--ink)"/>
+          <line x1="590" y1="80" x2="590" y2="108" marker-end="url(#arrow)" color="var(--ink)"/>
+          <line x1="970" y1="80" x2="970" y2="108" marker-end="url(#arrow)" color="var(--ink)"/>
+        </g>
+        <g font-family="IBM Plex Sans" font-size="11" fill="var(--muted)" text-anchor="middle">
+          <text x="210" y="96">код / агенты</text>
+          <text x="590" y="96">тексты / реклама</text>
+          <text x="970" y="96">дизайн по референсам</text>
+        </g>
+
+        <!-- ================= LANE 1 — CODERS ================= -->
+        <g>
+          <text x="40" y="0" transform="translate(0,-2)"></text>
+          <text x="40" y="106" font-family="IBM Plex Mono" font-size="10" letter-spacing="0.08em" fill="var(--coders)">УЧАСТОК 01 — КОДЕРЫ</text>
+
+          <!-- manager -->
+          <rect x="40" y="110" width="340" height="54" rx="4" fill="var(--surface-2)"
+                stroke="var(--coders)" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <rect x="40" y="110" width="5" height="54" fill="var(--coders)"/>
+          <text x="58" y="132" font-family="IBM Plex Sans" font-size="14" font-weight="600" fill="var(--ink)">Оркестратор</text>
+          <text x="58" y="150" font-family="IBM Plex Sans" font-size="11" fill="var(--muted)">менеджер · распределяет, не выполняет сам</text>
+
+          <line x1="210" y1="164" x2="210" y2="188" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <!-- workers -->
+          <g>
+            <rect x="40" y="190" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="40" y="190" width="5" height="46" fill="var(--coders)"/>
+            <text x="58" y="210" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Архитектор</text>
+            <text x="58" y="226" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">спецификация нового агента</text>
+          </g>
+          <line x1="210" y1="236" x2="210" y2="249" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="40" y="250" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="40" y="250" width="5" height="46" fill="var(--coders)"/>
+            <text x="58" y="270" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Исследователь</text>
+            <text x="58" y="286" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">практики, инструменты, примеры</text>
+          </g>
+          <line x1="210" y1="296" x2="210" y2="309" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="40" y="310" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="40" y="310" width="5" height="46" fill="var(--coders)"/>
+            <text x="58" y="330" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Кодер (LLM-инженер)</text>
+            <text x="58" y="346" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">→ пишет agent.py</text>
+          </g>
+          <line x1="210" y1="356" x2="210" y2="369" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="40" y="370" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="40" y="370" width="5" height="46" fill="var(--coders)"/>
+            <text x="58" y="390" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Ревьюер / QA</text>
+            <text x="58" y="406" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">APPROVED / CHANGES_REQUESTED</text>
+          </g>
+          <line x1="210" y1="416" x2="210" y2="429" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="40" y="430" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="40" y="430" width="5" height="46" fill="var(--coders)"/>
+            <text x="58" y="450" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">DevOps</text>
+            <text x="58" y="466" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">→ docker build + run, если APPROVED</text>
+          </g>
+          <line x1="210" y1="476" x2="210" y2="489" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="40" y="490" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="40" y="490" width="5" height="46" fill="var(--coders)"/>
+            <text x="58" y="510" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Аналитик самообучения</text>
+            <text x="58" y="526" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">извлекает 1-3 урока</text>
+          </g>
+          <line x1="210" y1="536" x2="210" y2="559" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <!-- knowledge -->
+          <rect x="40" y="560" width="340" height="52" rx="4" fill="var(--surface-2)" stroke="var(--coders)" stroke-width="1.2"/>
+          <line x1="58" y1="576" x2="90" y2="576" stroke="var(--coders)" stroke-width="1.4"/>
+          <line x1="58" y1="583" x2="90" y2="583" stroke="var(--coders)" stroke-width="1.4"/>
+          <line x1="58" y1="590" x2="80" y2="590" stroke="var(--coders)" stroke-width="1.4"/>
+          <text x="100" y="581" font-family="IBM Plex Sans" font-size="12.5" font-weight="500" fill="var(--ink)">База знаний отдела</text>
+          <text x="100" y="597" font-family="IBM Plex Mono" font-size="10.5" fill="var(--muted)">knowledge/coders_lessons.md</text>
+
+          <!-- feedback -->
+          <line x1="396" y1="164" x2="396" y2="560" stroke="var(--coders)" color="var(--coders)" stroke-width="1.4" stroke-dasharray="2 5" marker-start="url(#arrow)"/>
+        </g>
+
+        <!-- ================= LANE 2 — MARKETING ================= -->
+        <g>
+          <text x="420" y="106" font-family="IBM Plex Mono" font-size="10" letter-spacing="0.08em" fill="var(--marketing)">УЧАСТОК 02 — МАРКЕТИНГ</text>
+
+          <rect x="420" y="110" width="340" height="54" rx="4" fill="var(--surface-2)"
+                stroke="var(--marketing)" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <rect x="420" y="110" width="5" height="54" fill="var(--marketing)"/>
+          <text x="438" y="132" font-family="IBM Plex Sans" font-size="14" font-weight="600" fill="var(--ink)">Бренд-директор</text>
+          <text x="438" y="150" font-family="IBM Plex Sans" font-size="11" fill="var(--muted)">менеджер · распределяет, не выполняет сам</text>
+
+          <line x1="590" y1="164" x2="590" y2="188" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="420" y="190" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="420" y="190" width="5" height="46" fill="var(--marketing)"/>
+            <text x="438" y="210" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Маркетинг-стратег</text>
+            <text x="438" y="226" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">бриф: аудитория, УТП, тон, канал</text>
+          </g>
+          <line x1="590" y1="236" x2="590" y2="249" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="420" y="250" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="420" y="250" width="5" height="46" fill="var(--marketing)"/>
+            <text x="438" y="270" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Копирайтер</text>
+            <text x="438" y="286" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">пишет текст строго по брифу</text>
+          </g>
+          <line x1="590" y1="296" x2="590" y2="309" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="420" y="310" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="420" y="310" width="5" height="46" fill="var(--marketing)"/>
+            <text x="438" y="330" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">SEO-специалист</text>
+            <text x="438" y="346" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">только если канал поисковый</text>
+          </g>
+          <line x1="590" y1="356" x2="590" y2="369" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="420" y="370" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="420" y="370" width="5" height="46" fill="var(--marketing)"/>
+            <text x="438" y="390" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Редактор</text>
+            <text x="438" y="406" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">→ финальный готовый текст</text>
+          </g>
+          <line x1="590" y1="416" x2="590" y2="429" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="420" y="430" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="420" y="430" width="5" height="46" fill="var(--marketing)"/>
+            <text x="438" y="450" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Аналитик самообучения</text>
+            <text x="438" y="466" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">извлекает 1-3 урока</text>
+          </g>
+          <line x1="590" y1="476" x2="590" y2="499" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <rect x="420" y="500" width="340" height="52" rx="4" fill="var(--surface-2)" stroke="var(--marketing)" stroke-width="1.2"/>
+          <line x1="438" y1="516" x2="470" y2="516" stroke="var(--marketing)" stroke-width="1.4"/>
+          <line x1="438" y1="523" x2="470" y2="523" stroke="var(--marketing)" stroke-width="1.4"/>
+          <line x1="438" y1="530" x2="460" y2="530" stroke="var(--marketing)" stroke-width="1.4"/>
+          <text x="480" y="521" font-family="IBM Plex Sans" font-size="12.5" font-weight="500" fill="var(--ink)">База знаний отдела</text>
+          <text x="480" y="537" font-family="IBM Plex Mono" font-size="10.5" fill="var(--muted)">knowledge/marketing_lessons.md</text>
+
+          <line x1="776" y1="164" x2="776" y2="500" stroke="var(--marketing)" color="var(--marketing)" stroke-width="1.4" stroke-dasharray="2 5" marker-start="url(#arrow)"/>
+        </g>
+
+        <!-- ================= LANE 3 — DESIGN ================= -->
+        <g>
+          <text x="800" y="106" font-family="IBM Plex Mono" font-size="10" letter-spacing="0.08em" fill="var(--design)">УЧАСТОК 03 — ДИЗАЙН</text>
+
+          <rect x="800" y="110" width="340" height="54" rx="4" fill="var(--surface-2)"
+                stroke="var(--design)" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <rect x="800" y="110" width="5" height="54" fill="var(--design)"/>
+          <text x="818" y="132" font-family="IBM Plex Sans" font-size="14" font-weight="600" fill="var(--ink)">Арт-директор</text>
+          <text x="818" y="150" font-family="IBM Plex Sans" font-size="11" fill="var(--muted)">менеджер · распределяет, не выполняет сам</text>
+
+          <line x1="970" y1="164" x2="970" y2="188" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="800" y="190" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="800" y="190" width="5" height="46" fill="var(--design)"/>
+            <text x="818" y="210" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Аналитик референсов</text>
+            <text x="818" y="226" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">vision-разбор картинок из references/</text>
+          </g>
+          <line x1="970" y1="236" x2="970" y2="249" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="800" y="250" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="800" y="250" width="5" height="46" fill="var(--design)"/>
+            <text x="818" y="270" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Архитектор дизайн-системы</text>
+            <text x="818" y="286" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">→ design-system.md</text>
+          </g>
+          <line x1="970" y1="296" x2="970" y2="309" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="800" y="310" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="800" y="310" width="5" height="46" fill="var(--design)"/>
+            <text x="818" y="330" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Вёрстальщик</text>
+            <text x="818" y="346" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">→ index.html (реальные фото, без выдумок)</text>
+          </g>
+          <line x1="970" y1="356" x2="970" y2="369" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="800" y="370" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="800" y="370" width="5" height="46" fill="var(--design)"/>
+            <text x="818" y="390" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Ревьюер дизайна</text>
+            <text x="818" y="406" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">сверка с ограничениями брифа</text>
+          </g>
+          <line x1="970" y1="416" x2="970" y2="429" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <g>
+            <rect x="800" y="430" width="340" height="46" rx="4" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.2"/>
+            <rect x="800" y="430" width="5" height="46" fill="var(--design)"/>
+            <text x="818" y="450" font-family="IBM Plex Sans" font-size="13.5" font-weight="600" fill="var(--ink)">Аналитик самообучения</text>
+            <text x="818" y="466" font-family="IBM Plex Sans" font-size="10.5" fill="var(--muted)">извлекает 1-3 урока</text>
+          </g>
+          <line x1="970" y1="476" x2="970" y2="499" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <rect x="800" y="500" width="340" height="52" rx="4" fill="var(--surface-2)" stroke="var(--design)" stroke-width="1.2"/>
+          <line x1="818" y1="516" x2="850" y2="516" stroke="var(--design)" stroke-width="1.4"/>
+          <line x1="818" y1="523" x2="850" y2="523" stroke="var(--design)" stroke-width="1.4"/>
+          <line x1="818" y1="530" x2="840" y2="530" stroke="var(--design)" stroke-width="1.4"/>
+          <text x="860" y="521" font-family="IBM Plex Sans" font-size="12.5" font-weight="500" fill="var(--ink)">База знаний отдела</text>
+          <text x="860" y="537" font-family="IBM Plex Mono" font-size="10.5" fill="var(--muted)">knowledge/design_lessons.md</text>
+
+          <line x1="1156" y1="164" x2="1156" y2="500" stroke="var(--design)" color="var(--design)" stroke-width="1.4" stroke-dasharray="2 5" marker-start="url(#arrow)"/>
+        </g>
+      </svg>
+    </div>
+    <figcaption>
+      Сплошные стрелки — передача результата следующему по очереди. Пунктирная рамка — менеджер, который
+      только распределяет работу. Пунктирная линия сбоку — база знаний отдела учитывается в следующем запуске.
+    </figcaption>
+  </figure>
+
+  <section>
+    <h2>Как читать схему</h2>
+    <div class="legend">
+      <div class="legend-item">
+        <svg width="34" height="14"><line x1="2" y1="7" x2="28" y2="7" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"/></svg>
+        <span><b>Сплошная стрелка</b> — агент передал результат следующему</span>
+      </div>
+      <div class="legend-item">
+        <svg width="40" height="20"><rect x="1" y="1" width="38" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/></svg>
+        <span><b>Пунктирная рамка</b> — менеджер: раздаёт задачи, сам их не делает</span>
+      </div>
+      <div class="legend-item">
+        <svg width="14" height="34"><line x1="7" y1="30" x2="7" y2="4" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 4" marker-end="url(#arrow)"/></svg>
+        <span><b>Пунктирная линия сбоку</b> — урок из базы знаний учитывается в следующем запуске</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Три отдела</h2>
+    <div class="depts">
+      <article class="dept-card" style="--dept-color: var(--coders)">
+        <div class="tag">Участок 01</div>
+        <h3>Кодеры</h3>
+        <p>Проектирует, пишет и деплоит новых ИИ-агентов по текстовому запросу.</p>
+        <div class="out"><b>Результат:</b> agent.py + запущенный Docker-контейнер</div>
+      </article>
+      <article class="dept-card" style="--dept-color: var(--marketing)">
+        <div class="tag">Участок 02</div>
+        <h3>Маркетинг + копирайтеры</h3>
+        <p>Превращает запрос в бриф и готовый рекламный/маркетинговый текст.</p>
+        <div class="out"><b>Результат:</b> готовый текст под канал (пост, email, лендинг)</div>
+      </article>
+      <article class="dept-card" style="--dept-color: var(--design)">
+        <div class="tag">Участок 03</div>
+        <h3>Дизайнеры</h3>
+        <p>Разбирает референсы (Pinterest/Dribbble/Awwwards) и собирает макет.</p>
+        <div class="out"><b>Результат:</b> design-system.md + рабочий index.html</div>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Простыми словами</h2>
+    <div class="callout">
+      Каждый отдел — это не один ИИ, а <b>маленькая команда из нескольких ИИ-специалистов</b>,
+      которые передают работу друг другу по очереди, как на настоящем производстве: один придумал план,
+      следующий сделал по плану, третий проверил. В конце «Аналитик самообучения» записывает, что в этот
+      раз получилось хорошо или плохо, в обычный текстовый файл. В следующий раз вся команда отдела
+      заглядывает в этот файл — и не наступает на те же грабли.
+    </div>
+  </section>
+
+  <details>
+    <summary>Технические детали (для тех, кому интересно)</summary>
+    <p>Вся система написана на Python поверх фреймворка <code>CrewAI</code>. Каждый отдел — отдельный
+    файл <code>crew.py</code>, все вместе они лежат в <code>src/</code> и подключаются через один общий
+    диспетчер <code>src/institute/router.py</code>.</p>
+    <ul>
+      <li><b>Диспетчер</b> — один быстрый вызов дешёвой модели (Haiku), которая решает, в какой отдел идёт запрос.</li>
+      <li><b>Менеджер отдела</b> (<code>Process.hierarchical</code>) — не входит в список рабочих агентов CrewAI,
+        только раздаёт задачи специалистам и требует переделки при необходимости.</li>
+      <li><b>Память между запусками</b> (<code>memory=True</code>) и <b>база знаний</b>
+        (<code>knowledge_sources</code>) — обе полностью локальные, без внешних сервисов и лишних ключей API.</li>
+      <li>Каждая роль может работать на своей модели (Claude/GPT) — настраивается переменными окружения
+        в <code>.env</code>, без правки кода.</li>
+    </ul>
+  </details>
+
+  <footer>
+    SKYNET · институт ИИ-агентов · схема актуальна на текущую структуру src/
+  </footer>
+</div>
