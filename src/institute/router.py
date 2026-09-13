@@ -1,6 +1,7 @@
 import os
 import json
 
+from institute.crew_output import deliverable_output
 from institute.local_mode import anthropic_available, openai_available
 from institute.knowledge import lesson_context
 from institute.openai_client import chat_completion, text_message
@@ -106,7 +107,7 @@ def route_and_run(user_request: str, department_override: str | None = None) -> 
                 "department_knowledge": lesson_context(department),
             }
         )
-        final_output = result.raw
+        final_output = deliverable_output(result)
 
         if quality_gate_enabled() and department != "quality_control":
             print("[Институт] Финальный результат направлен в отдел: quality_control")
@@ -118,7 +119,7 @@ def route_and_run(user_request: str, department_override: str | None = None) -> 
                     "department_knowledge": lesson_context("quality_control"),
                 }
             )
-            final_output = quality_result.raw
+            final_output = deliverable_output(quality_result)
 
         store.complete(manifest, final_output)
         return final_output

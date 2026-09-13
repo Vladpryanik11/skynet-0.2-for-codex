@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from agent_factory.crew import AgentFactoryCrew  # noqa: E402
+from institute.crew_output import deliverable_output  # noqa: E402
 from institute.knowledge import lesson_context  # noqa: E402
 
 
@@ -21,7 +22,7 @@ def main() -> None:
         }
     )
     print("\n=== ИТОГ ===\n")
-    print(result.raw)
+    print(deliverable_output(result))
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ from crewai import Agent, Crew, LLM, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
 from design_dept.tools import AnalyzeReferencesTool, SaveDesignFileTool
+from institute.crew_output import REFLECTION_TASK_NAME
 from institute.eval_tools import JudgeOutputTool
 from institute.learning_tools import RecordLessonTool
 from institute.knowledge import knowledge_sources_for
@@ -98,7 +99,7 @@ class DesignCrew:
 
     @task
     def reflect_task(self) -> Task:
-        return Task(config=self.tasks_config["reflect_task"])
+        return Task(config=self.tasks_config["reflect_task"], name=REFLECTION_TASK_NAME)
 
     @crew
     def crew(self) -> Crew:
