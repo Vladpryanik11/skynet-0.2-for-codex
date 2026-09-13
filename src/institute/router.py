@@ -1,8 +1,9 @@
 import os
 import json
 
-from institute.local_mode import anthropic_available
+from institute.local_mode import anthropic_available, openai_available
 from institute.knowledge import lesson_context
+from institute.openai_client import chat_completion, text_message
 from institute.registry import DEPARTMENT_REGISTRY, keyword_route, load_department_crew
 from institute.run_store import RunStore
 from institute.runtime import quality_gate_enabled
@@ -24,22 +25,45 @@ def classify_department(user_request: str) -> str:
     if fallback:
         return fallback
 
+    options = "\n".join(f"- {name}: {desc}" for name, desc in DEPARTMENTS.items())
+    system_prompt = (
+        "Ты диспетчер ИИ-института. По запросу пользователя определи, "
+        "какой отдел должен его обработать. Ответь STRICT JSON без markdown: "
+        "{\"department\":\"<ключ отдела>\",\"confidence\":0.0,\"reason\":\"коротко\"}. "
+        "Ключ отдела выбери только из списка ниже.\n\n" + options
+    )
+
+    if openai_available() and not anthropic_available():
+        text = chat_completion(
+            [text_message("system", system_prompt), text_message("user", user_request)],
+            model=os.environ.get("OPENAI_ROUTER_MODEL") or os.environ.get("OPENAI_FAST_MODEL"),
+            fallback_models=os.environ.get("OPENAI_MODEL_FALLBACKS", "gpt-4.1-mini,gpt-4o-mini"),
+            max_tokens=120,
+            temperature=0.1,
+            timeout=60,
+        ).strip().lower()
+        try:
+            payload = json.loads(text)
+            department = str(payload.get("department", "")).strip().lower()
+            if department in DEPARTMENTS:
+                return department
+        except json.JSONDecodeError:
+            pass
+
+        for name in DEPARTMENTS:
+            if name in text:
+                return name
+
     if not anthropic_available():
         return os.environ.get("DEFAULT_DEPARTMENT", "coders")
 
     import anthropic
 
     client = anthropic.Anthropic()
-    options = "\n".join(f"- {name}: {desc}" for name, desc in DEPARTMENTS.items())
     response = client.messages.create(
         model=os.environ.get("ROUTER_MODEL", "claude-haiku-4-5"),
         max_tokens=120,
-        system=(
-            "Ты диспетчер ИИ-института. По запросу пользователя определи, "
-            "какой отдел должен его обработать. Ответь STRICT JSON без markdown: "
-            "{\"department\":\"<ключ отдела>\",\"confidence\":0.0,\"reason\":\"коротко\"}. "
-            "Ключ отдела выбери только из списка ниже.\n\n" + options
-        ),
+        system=system_prompt,
         messages=[{"role": "user", "content": user_request}],
     )
     text = next(b.text for b in response.content if b.type == "text").strip().lower()

@@ -5,10 +5,19 @@ import os
 from crewai.tools import BaseTool
 from pydantic import BaseModel
 
-from institute.local_mode import anthropic_available
+from institute.local_mode import anthropic_available, openai_available
+from institute.openai_client import chat_completion, vision_user_message
 
 REFERENCES_DIR = os.environ.get("REFERENCES_DIR", "./references")
 SUPPORTED_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+VISION_PROMPT = (
+    "Ниже идут референсы дизайна сайтов, пронумерованные по порядку "
+    "(№1, №2, ...). Для каждого опиши: типографику, сетку/грид, "
+    "цветовую палитру (с примерными hex, если можешь предположить), "
+    "ритм блоков, работу с пространством. В конце — общие черты между "
+    "всеми референсами, на основе которых можно собрать одну "
+    "согласованную дизайн-систему."
+)
 
 
 class AnalyzeReferencesInput(BaseModel):
@@ -43,26 +52,37 @@ class AnalyzeReferencesTool(BaseTool):
                 "Сохраните туда скриншоты референсов и повтори."
             )
 
-        if not anthropic_available():
+        if not anthropic_available() and not openai_available():
             names = ", ".join(files)
             return (
                 "Vision-анализ изображений отключён: режим local/hybrid работает без "
-                "ANTHROPIC_API_KEY. Найдены файлы: "
+                "ANTHROPIC_API_KEY или OPENAI_API_KEY. Найдены файлы: "
                 f"{names}. Опишите словами, что нравится в каждом референсе, или "
-                "переключите SKYNET_MODE=cloud/hybrid и добавьте ANTHROPIC_API_KEY."
+                "переключите SKYNET_MODE=cloud/hybrid и добавьте API-ключ."
+            )
+
+        if openai_available() and not anthropic_available():
+            images = []
+            for i, filename in enumerate(files, start=1):
+                path = os.path.join(REFERENCES_DIR, filename)
+                media_type = mimetypes.guess_type(path)[0] or "image/png"
+                with open(path, "rb") as f:
+                    data = base64.standard_b64encode(f.read()).decode("utf-8")
+                images.append((f"№{i} ({filename}):", f"data:{media_type};base64,{data}"))
+
+            return chat_completion(
+                [vision_user_message(VISION_PROMPT, images)],
+                model=os.environ.get("OPENAI_VISION_MODEL") or os.environ.get("OPENAI_FAST_MODEL"),
+                fallback_models=os.environ.get("OPENAI_MODEL_FALLBACKS", "gpt-4.1-mini,gpt-4o-mini"),
+                max_tokens=2000,
+                temperature=0.2,
+                timeout=180,
             )
 
         content = [
             {
                 "type": "text",
-                "text": (
-                    "Ниже идут референсы дизайна сайтов, пронумерованные по порядку "
-                    "(№1, №2, ...). Для каждого опиши: типографику, сетку/грид, "
-                    "цветовую палитру (с примерными hex, если можешь предположить), "
-                    "ритм блоков, работу с пространством. В конце — общие черты между "
-                    "всеми референсами, на основе которых можно собрать одну "
-                    "согласованную дизайн-систему."
-                ),
+                "text": VISION_PROMPT,
             }
         ]
         for i, filename in enumerate(files, start=1):

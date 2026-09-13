@@ -13,7 +13,8 @@ from telegram_bot import (
     progress_percent,
     split_for_telegram,
 )
-from telegram_task_runner import build_fast_payload, ollama_model_name
+from institute.openai_client import candidate_models, openai_model_name
+from telegram_task_runner import build_fast_payload, fast_provider, ollama_model_name
 
 
 def test_parse_allowed_user_ids_accepts_commas_and_semicolons():
@@ -69,3 +70,20 @@ def test_build_fast_payload_caps_response(monkeypatch):
     payload = build_fast_payload("привет")
     assert payload["model"] == "llama3.2:1b"
     assert payload["options"]["num_predict"] == 128
+
+
+def test_openai_model_name_strips_litellm_prefix():
+    assert openai_model_name("openai/gpt-4o-mini") == "gpt-4o-mini"
+
+
+def test_candidate_models_deduplicates_fallbacks(monkeypatch):
+    monkeypatch.delenv("OPENAI_DEFAULT_MODEL", raising=False)
+    monkeypatch.setenv("OPENAI_MODEL_FALLBACKS", "gpt-a,gpt-a,gpt-b")
+    assert candidate_models("openai/gpt-a") == ["gpt-a", "gpt-b"]
+
+
+def test_fast_provider_prefers_openai_when_available(monkeypatch):
+    monkeypatch.setenv("SKYNET_MODE", "cloud")
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    monkeypatch.setenv("FAST_MODE_PROVIDER", "auto")
+    assert fast_provider() == "openai"

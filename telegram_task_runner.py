@@ -13,6 +13,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+from institute.local_mode import openai_available  # noqa: E402
+from institute.openai_client import chat_completion, openai_model_name, text_message  # noqa: E402
+
 RUNNER_RESULT_START = "<<<SKYNET_RESULT_START>>>"
 RUNNER_RESULT_END = "<<<SKYNET_RESULT_END>>>"
 
@@ -77,7 +85,38 @@ def build_fast_payload(user_request: str) -> dict[str, object]:
     }
 
 
+def fast_provider() -> str:
+    provider = os.environ.get("FAST_MODE_PROVIDER", "auto").strip().lower()
+    if provider not in {"auto", "openai", "ollama"}:
+        provider = "auto"
+    if provider == "auto":
+        return "openai" if openai_available() else "ollama"
+    return provider
+
+
+def run_openai_fast_response(user_request: str) -> str:
+    model = openai_model_name(
+        os.environ.get("OPENAI_FAST_MODEL")
+        or os.environ.get("OPENAI_DEFAULT_MODEL")
+        or os.environ.get("CLOUD_DEFAULT_MODEL")
+    )
+    return chat_completion(
+        [
+            text_message("system", FAST_SYSTEM_PROMPT),
+            text_message("user", user_request),
+        ],
+        model=model,
+        fallback_models=os.environ.get("OPENAI_MODEL_FALLBACKS", "gpt-4.1-mini,gpt-4o-mini"),
+        max_tokens=int_env("FAST_MODE_NUM_PREDICT", 384),
+        temperature=float_env("FAST_MODE_TEMPERATURE", 0.3),
+        timeout=int_env("FAST_MODE_TIMEOUT", 90),
+    )
+
+
 def run_fast_response(user_request: str) -> str:
+    if fast_provider() == "openai":
+        return run_openai_fast_response(user_request)
+
     payload = build_fast_payload(user_request)
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     request = urllib.request.Request(

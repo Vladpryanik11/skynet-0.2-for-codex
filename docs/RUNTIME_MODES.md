@@ -2,13 +2,30 @@
 
 SKYNET 0.2 поддерживает три режима через переменную `SKYNET_MODE`.
 
-## 1. Local
+## 1. Cloud
 
-Без API-ключей и без платных моделей.
+Рекомендуемый режим для Telegram-бота и VPS. Сервер принимает сообщения,
+обновляет прогресс и хранит состояние, а генерация идёт через API.
+
+```env
+SKYNET_MODE=cloud
+OPENAI_API_KEY=...
+CLOUD_DEFAULT_MODEL=openai/gpt-4o-mini
+OPENAI_FAST_MODEL=gpt-4o-mini
+FAST_MODE_PROVIDER=auto
+```
+
+Если роль была настроена на Anthropic, но `ANTHROPIC_API_KEY` пустой и есть
+`OPENAI_API_KEY`, SKYNET автоматически берёт `CLOUD_DEFAULT_MODEL`.
+
+## 2. Local
+
+Без API-ключей и без платных моделей. Нужна локальная Ollama-модель.
 
 ```env
 SKYNET_MODE=local
-LOCAL_DEFAULT_MODEL=ollama/llama3.1:8b
+LOCAL_DEFAULT_MODEL=ollama/llama3.2:1b
+FAST_MODE_PROVIDER=ollama
 ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
 ```
@@ -16,75 +33,53 @@ OPENAI_API_KEY=
 Что нужно установить один раз:
 
 ```bash
-ollama pull llama3.1:8b
-```
-
-Запуск:
-
-```bash
-python run.py "напиши пост для соцсетей"
+ollama pull llama3.2:1b
 ```
 
 Ограничения local-режима:
 
 - качество ниже, чем у Claude/GPT;
-- vision-анализ изображений отключён без облачного ключа;
-- сложный код лучше проверять вручную;
-- скорость зависит от железа.
-
-## 2. Cloud
-
-Работает через Claude/GPT API.
-
-```env
-SKYNET_MODE=cloud
-ANTHROPIC_API_KEY=...
-OPENAI_API_KEY=...
-```
-
-Подходит для сложного кода, дизайна, анализа референсов и строгого QA.
+- скорость зависит от CPU/RAM;
+- 1 GB RAM для Ollama и CrewAI недостаточно для стабильной работы;
+- vision-анализ изображений отключён без облачного ключа.
 
 ## 3. Hybrid
 
-Лучший рабочий режим для развития проекта:
+Режим для разработческой машины: если ключи есть, используются облачные модели,
+если ключей нет, система падает в локальный режим.
 
 ```env
 SKYNET_MODE=hybrid
-LOCAL_DEFAULT_MODEL=ollama/llama3.1:8b
-ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
+LOCAL_DEFAULT_MODEL=ollama/llama3.2:1b
 ```
 
-Логика:
-
-- если ключи есть — используются облачные модели;
-- если ключей нет — система автоматически падает в локальный режим;
-- отдельные роли можно переключать вручную:
+Отдельные роли можно переключать вручную:
 
 ```env
-CODERS_CODER_MODEL=ollama/deepseek-coder:6.7b
-COPYWRITER_MODEL=ollama/llama3.1:8b
-DESIGN_SYSTEM_MODEL=anthropic/claude-sonnet-5
+CODERS_CODER_MODEL=openai/gpt-4o-mini
+COPYWRITER_MODEL=openai/gpt-4o-mini
+DESIGN_SYSTEM_MODEL=ollama/llama3.2:1b
 ```
+
+## Telegram
+
+Для быстрых сообщений:
+
+```env
+TELEGRAM_DEFAULT_MODE=fast
+FAST_MODE_PROVIDER=auto
+OPENAI_FAST_MODEL=gpt-4o-mini
+FAST_MODE_NUM_PREDICT=384
+```
+
+Режим `fast` делает один прямой вызов модели. Режимы `auto`, `coders`,
+`marketing` и `design` запускают полный многоагентный конвейер и поэтому
+работают дольше.
 
 ## Claude Pro без API
 
-Если есть Claude Pro, но нет платного Anthropic API, используй `SKYNET_MODE=local`.
-Claude Pro в этой схеме — не автоматический LLM-провайдер внутри CrewAI, а внешний
-усилитель через Claude Web или Claude Code.
+Claude Pro не является API-ключом и не может автоматически питать CrewAI.
+Его можно применять отдельно через Claude Web или Claude Code.
 
 Подробнее: `docs/CLAUDE_PRO_NO_API.md`.
-
-## Рекомендуемые бесплатные локальные модели
-
-```bash
-ollama pull llama3.1:8b
-ollama pull qwen2.5-coder:7b
-ollama pull deepseek-coder:6.7b
-```
-
-Для слабого ПК:
-
-```bash
-ollama pull llama3.2:3b
-```

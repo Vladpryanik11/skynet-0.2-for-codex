@@ -1,24 +1,16 @@
 # Настройка сервера для SKYNET
 
-## Почему Codex не вошёл сам
-
-Из текущего Work-окружения сеть до сервера недоступна:
-
-```text
-Network is unreachable
-```
-
-Поэтому настройку нужно запустить с твоего компьютера по SSH.
+Рекомендуемый режим для маленького VPS — `cloud`: Telegram-бот живёт на
+сервере, а генерация ответов идёт через OpenAI API. Так сервер не тратит CPU и
+RAM на локальную Ollama-модель.
 
 ## 1. Подключиться к серверу
 
 В PowerShell:
 
 ```powershell
-ssh root@144.31.192.91
+ssh root@<server-ip>
 ```
-
-Введи пароль от сервера.
 
 ## 2. Запустить базовую установку
 
@@ -29,83 +21,75 @@ curl -fsSL https://raw.githubusercontent.com/Vladpryanik11/skynet-0.2-for-codex/
 REPO_URL=https://github.com/Vladpryanik11/skynet-0.2-for-codex.git bash /tmp/server_bootstrap.sh
 ```
 
-Если файла ещё нет в GitHub, загрузи локальную версию:
+По умолчанию скрипт не ставит Ollama. Если нужен полностью локальный режим:
 
-```powershell
-scp scripts/server_bootstrap.sh root@144.31.192.91:/tmp/server_bootstrap.sh
-ssh root@144.31.192.91 "bash /tmp/server_bootstrap.sh"
+```bash
+INSTALL_OLLAMA=1 SKYNET_MODE=local bash /tmp/server_bootstrap.sh
 ```
 
-## Telegram-бот
+## 3. Настроить `.env`
 
-После базовой установки добавь токен в `/opt/skynet/.env`:
+После установки добавь в `/opt/skynet/.env` ключи:
 
 ```env
+OPENAI_API_KEY=...
 TELEGRAM_BOT_TOKEN=...
-TELEGRAM_ALLOWED_USER_IDS=
-TELEGRAM_TASK_QUEUE_SIZE=2
+```
+
+Рекомендуемые настройки для Telegram:
+
+```env
+SKYNET_MODE=cloud
+CLOUD_DEFAULT_MODEL=openai/gpt-4o-mini
+OPENAI_DEFAULT_MODEL=gpt-4o-mini
+DEFAULT_DEPARTMENT=marketing
+
+TELEGRAM_TASK_QUEUE_SIZE=10
 TELEGRAM_DEFAULT_MODE=fast
+FAST_MODE_PROVIDER=auto
+OPENAI_FAST_MODEL=gpt-4o-mini
+OPENAI_MODEL_FALLBACKS=gpt-4.1-mini,gpt-4o-mini
 TELEGRAM_TASK_TIMEOUT=300
 TELEGRAM_PROGRESS_INTERVAL=5
+FAST_MODE_TIMEOUT=90
 FAST_MODE_NUM_PREDICT=384
 ```
 
-Запуск вручную:
-
-```bash
-cd /opt/skynet
-source .venv/bin/activate
-python telegram_bot.py
-```
+## 4. Запустить Telegram-бота
 
 Автозапуск через systemd:
 
 ```bash
 cd /opt/skynet
 bash scripts/install_telegram_bot_service.sh
+systemctl restart skynet-telegram-bot
+systemctl status skynet-telegram-bot
 ```
 
 В Telegram доступны `/mode` с кнопками режимов Быстрый, Авто, Кодеры,
-Маркетинг и Дизайн, а также `/status`. Быстрый режим отвечает одним прямым
-вызовом локальной модели, а остальные режимы запускают полный агентный
-конвейер. Во время выполнения задачи бот обновляет сообщение с процентом
-готовности.
+Маркетинг и Дизайн, а также `/status`.
 
-## 3. Запустить SKYNET
+- Быстрый режим отвечает одним прямым вызовом OpenAI API.
+- Авто/Кодеры/Маркетинг/Дизайн запускают полный агентный конвейер.
+- Бот обновляет сообщение с процентом готовности и присылает длинные ответы
+  частями.
 
-На сервере:
+## 5. Проверка
 
 ```bash
 cd /opt/skynet
 source .venv/bin/activate
-python run.py "создай лендинг для ИИ-агентства: белый фон, голубые акценты, стеклянные карточки, услуги SMM, маркетинг, видеопродакшн, IT"
+printf 'Ответь одним коротким предложением: тест скорости.' | python telegram_task_runner.py --mode fast
 ```
 
-## 4. Где будет сайт
+## 6. Режим без API
 
-Дизайн-отдел сохраняет результат в:
-
-```text
-/opt/skynet/generated_designs/<project>/index.html
-```
-
-## 5. Режим без платного API
-
-Сервер будет настроен в local-режиме:
+Если принципиально нужен запуск без OpenAI API, включи локальный режим:
 
 ```env
 SKYNET_MODE=local
 LOCAL_DEFAULT_MODEL=ollama/llama3.2:1b
+FAST_MODE_PROVIDER=ollama
 ```
 
-Claude Pro не используется как API. Его можно применять отдельно через Claude Web/Claude Code для ручного усиления сложных задач.
-
-## 6. После настройки
-
-Сразу поменяй root-пароль:
-
-```bash
-passwd
-```
-
-Затем лучше перейти на SSH-ключи и отключить вход по паролю.
+Для него серверу нужны заметно большие ресурсы, чем 1 GB RAM.

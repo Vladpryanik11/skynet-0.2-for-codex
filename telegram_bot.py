@@ -423,6 +423,7 @@ async def progress_pulse(
 async def run_skynet_task(task: BotTask, timeout: int) -> str:
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
 
     process = await asyncio.create_subprocess_exec(
         sys.executable,
