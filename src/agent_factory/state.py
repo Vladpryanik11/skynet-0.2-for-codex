@@ -2,11 +2,14 @@ import json
 import os
 
 STATE_DIR = os.environ.get("STATE_DIR", "./.state")
-REVIEW_STATE_FILE = "last_review_verdict.json"
 
 
 def _path() -> str:
-    return os.path.join(STATE_DIR, REVIEW_STATE_FILE)
+    """Namespaced by PID: main.py, run.py and each Telegram task all run as
+    separate OS processes, so a shared filename would let one run's
+    before_kickoff clear or overwrite another concurrently running
+    process's not-yet-read verdict."""
+    return os.path.join(STATE_DIR, f"last_review_verdict.{os.getpid()}.json")
 
 
 def write_review_verdict(verdict: str, issues: list[str]) -> None:

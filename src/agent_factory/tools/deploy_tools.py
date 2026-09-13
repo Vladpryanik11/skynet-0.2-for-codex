@@ -30,6 +30,11 @@ class DeployAgentInput(BaseModel):
     )
 
 
+def _bool_env(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name, "1" if default else "0").strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
 class DeployGeneratedAgentTool(BaseTool):
     name: str = "deploy_generated_agent"
     description: str = (
@@ -43,6 +48,15 @@ class DeployGeneratedAgentTool(BaseTool):
     args_schema: type[BaseModel] = DeployAgentInput
 
     def _run(self, agent_filename: str, image_tag: str, extra_requirements: str = "") -> str:
+        if not _bool_env("ENABLE_AGENT_DEPLOY"):
+            return (
+                "ОШИБКА: автодеплой выключен на этом хосте (ENABLE_AGENT_DEPLOY не "
+                "включён в .env). Это осознанный барьер: без него любой вход в "
+                "отдел Кодеров (в т.ч. через открытый Telegram-бот) мог бы дойти "
+                "до реального docker build/run на сервере. Включите переменную "
+                "явно, если вы понимаете последствия."
+            )
+
         verdict = read_review_verdict()
         if verdict is None:
             return "ОШИБКА: деплой заблокирован — вердикт ревью ещё не зафиксирован в этом прогоне."
@@ -102,6 +116,16 @@ class DeployGeneratedAgentTool(BaseTool):
         memory_limit = os.environ.get("GENERATED_AGENT_MEMORY", "512m")
         cpu_limit = os.environ.get("GENERATED_AGENT_CPUS", "1.0")
         network_mode = os.environ.get("GENERATED_AGENT_NETWORK", "bridge")
+
+        # Re-deploying the same image_tag while the previous container is
+        # still alive would otherwise fail docker run with "name already
+        # in use"; clear it first (best-effort, ignores "not found").
+        subprocess.run(
+            ["docker", "rm", "-f", safe_tag],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
 
         try:
             run = subprocess.run(

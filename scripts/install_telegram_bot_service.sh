@@ -3,8 +3,17 @@ set -euo pipefail
 
 APP_DIR="${APP_DIR:-/opt/skynet}"
 SERVICE_NAME="${SERVICE_NAME:-skynet-telegram-bot}"
-SERVICE_USER="${SERVICE_USER:-root}"
+SERVICE_USER="${SERVICE_USER:-}"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
+
+if [ -z "$SERVICE_USER" ]; then
+  echo "SERVICE_USER is not set." >&2
+  echo "This bot's Coders department can trigger real 'docker build'/'docker run'" >&2
+  echo "on this host, so it should not default to running as root silently." >&2
+  echo "Set SERVICE_USER to a dedicated non-root user (must be in the 'docker'" >&2
+  echo "group), or export SERVICE_USER=root explicitly if you accept that risk." >&2
+  exit 1
+fi
 
 if [ ! -d "$APP_DIR" ]; then
   echo "APP_DIR does not exist: $APP_DIR"

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import logging
 import os
 import sys
 import time
@@ -25,6 +26,8 @@ from telegram.ext import (
 )
 
 load_dotenv()
+
+logger = logging.getLogger("skynet.telegram_bot")
 
 TELEGRAM_CHUNK_LIMIT = 3800
 RUNNER_RESULT_START = "<<<SKYNET_RESULT_START>>>"
@@ -454,7 +457,8 @@ async def run_skynet_task(task: BotTask, timeout: int) -> str:
 
     if process.returncode != 0:
         details = tail_text(stderr_text or stdout_text or "runner stopped without output")
-        raise RuntimeError(details)
+        logger.error("Task #%s runner exited %s:\n%s", task.id, process.returncode, details)
+        raise RuntimeError("внутренняя ошибка при выполнении задачи (подробности записаны в логи сервера)")
 
     return result_text or "(пустой ответ)"
 
@@ -504,6 +508,7 @@ async def worker(application: Application) -> None:
             await send_long_message(application, task.chat_id, f"Готово, задача #{task.id}:\n\n{result}")
         except Exception as exc:
             state.failed += 1
+            logger.exception("Task #%s failed", task.id)
             if progress is not None:
                 progress.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
@@ -548,6 +553,11 @@ def int_env(name: str, default: int) -> int:
 
 
 def main() -> None:
+    logging.basicConfig(
+        level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     if not token:
         raise SystemExit("TELEGRAM_BOT_TOKEN is required in .env or environment.")
@@ -562,9 +572,13 @@ def main() -> None:
         .build()
     )
     application.bot_data["state"] = BotState(queue=asyncio.Queue(maxsize=max_queue_size))
-    application.bot_data["allowed_user_ids"] = parse_allowed_user_ids(
-        os.environ.get("TELEGRAM_ALLOWED_USER_IDS")
-    )
+    allowed_user_ids = parse_allowed_user_ids(os.environ.get("TELEGRAM_ALLOWED_USER_IDS"))
+    application.bot_data["allowed_user_ids"] = allowed_user_ids
+    if not allowed_user_ids:
+        logger.warning(
+            "TELEGRAM_ALLOWED_USER_IDS is empty: this bot accepts ANY Telegram "
+            "user. Set it before running in production."
+        )
 
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("help", help_command))

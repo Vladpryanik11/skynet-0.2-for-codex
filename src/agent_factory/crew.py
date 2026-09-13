@@ -6,6 +6,7 @@ from crewai.project import CrewBase, agent, before_kickoff, crew, task
 from agent_factory.models import ReviewVerdict
 from agent_factory.state import clear_review_verdict, write_review_verdict
 from agent_factory.tools import (
+    DangerousPatternScanTool,
     DeployGeneratedAgentTool,
     PythonSyntaxCheckTool,
     SaveGeneratedAgentTool,
@@ -28,6 +29,16 @@ def _llm(env_var: str, default: str) -> LLM:
             base_url=os.environ.get("OLLAMA_API_BASE", "http://127.0.0.1:11434"),
         )
     return LLM(model=model)
+
+
+def _researcher_tools() -> list:
+    """SerperDevTool needs SERPER_API_KEY; without it the researcher falls
+    back to the model's own knowledge instead of failing outright."""
+    if not os.environ.get("SERPER_API_KEY", "").strip():
+        return []
+    from crewai_tools import SerperDevTool
+
+    return [SerperDevTool()]
 
 
 def _record_review_verdict(task_output) -> None:
@@ -71,6 +82,7 @@ class AgentFactoryCrew:
         return Agent(
             config=self.agents_config["researcher"],
             llm=_llm("CODERS_RESEARCHER_MODEL", "openai/gpt-5"),
+            tools=_researcher_tools(),
             verbose=True,
             **agent_runtime_kwargs(),
         )
@@ -90,7 +102,7 @@ class AgentFactoryCrew:
         return Agent(
             config=self.agents_config["reviewer"],
             llm=_llm("CODERS_REVIEWER_MODEL", "anthropic/claude-sonnet-5"),
-            tools=[PythonSyntaxCheckTool()],
+            tools=[PythonSyntaxCheckTool(), DangerousPatternScanTool()],
             verbose=True,
             **agent_runtime_kwargs(),
         )

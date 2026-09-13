@@ -113,6 +113,8 @@ RUNS_DIR=./runs
 STATE_DIR=./.state
 
 TELEGRAM_BOT_TOKEN=
+# Пусто = бот принимает ЛЮБОГО пользователя Telegram. Заполните своим
+# user_id (команда /id после запуска) до реального использования.
 TELEGRAM_ALLOWED_USER_IDS=
 TELEGRAM_TASK_QUEUE_SIZE=10
 TELEGRAM_DEFAULT_MODE=fast
@@ -133,6 +135,9 @@ GENERATED_AGENT_ENV_ALLOWLIST=ANTHROPIC_API_KEY,OPENAI_API_KEY,SERPER_API_KEY
 GENERATED_AGENT_MEMORY=256m
 GENERATED_AGENT_CPUS=0.5
 GENERATED_AGENT_NETWORK=bridge
+# Отдел Кодеров может дойти до реального docker build/run на этом хосте.
+# Включайте только осознанно, особенно пока TELEGRAM_ALLOWED_USER_IDS пуст.
+ENABLE_AGENT_DEPLOY=0
 ENV
 fi
 
