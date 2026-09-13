@@ -22,6 +22,15 @@ if ! command -v ollama >/dev/null 2>&1; then
 fi
 systemctl enable ollama || true
 systemctl start ollama || true
+mkdir -p /etc/systemd/system/ollama.service.d
+cat > /etc/systemd/system/ollama.service.d/skynet-small-vps.conf <<'CONF'
+[Service]
+Environment="OLLAMA_NUM_PARALLEL=1"
+Environment="OLLAMA_MAX_LOADED_MODELS=1"
+Environment="OLLAMA_KEEP_ALIVE=30s"
+CONF
+systemctl daemon-reload
+systemctl restart ollama || true
 
 echo "[4/8] Pulling local models"
 ollama pull llama3.2:1b || true
@@ -70,8 +79,13 @@ STATE_DIR=./.state
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_ALLOWED_USER_IDS=
 TELEGRAM_TASK_QUEUE_SIZE=2
+TELEGRAM_DEFAULT_MODE=fast
 TELEGRAM_TASK_TIMEOUT=300
 TELEGRAM_PROGRESS_INTERVAL=5
+FAST_MODE_TIMEOUT=90
+FAST_MODE_NUM_CTX=2048
+FAST_MODE_NUM_PREDICT=384
+FAST_MODE_TEMPERATURE=0.3
 
 GENERATED_AGENT_ENV_ALLOWLIST=ANTHROPIC_API_KEY,OPENAI_API_KEY,SERPER_API_KEY
 GENERATED_AGENT_MEMORY=256m

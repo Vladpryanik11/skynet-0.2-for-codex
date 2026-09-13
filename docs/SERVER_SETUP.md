@@ -44,8 +44,10 @@ ssh root@144.31.192.91 "bash /tmp/server_bootstrap.sh"
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_ALLOWED_USER_IDS=
 TELEGRAM_TASK_QUEUE_SIZE=2
+TELEGRAM_DEFAULT_MODE=fast
 TELEGRAM_TASK_TIMEOUT=300
 TELEGRAM_PROGRESS_INTERVAL=5
+FAST_MODE_NUM_PREDICT=384
 ```
 
 Запуск вручную:
@@ -63,9 +65,11 @@ cd /opt/skynet
 bash scripts/install_telegram_bot_service.sh
 ```
 
-В Telegram доступны `/mode` с кнопками режимов Авто, Кодеры, Маркетинг и
-Дизайн, а также `/status`. Во время выполнения задачи бот обновляет сообщение
-с процентом готовности.
+В Telegram доступны `/mode` с кнопками режимов Быстрый, Авто, Кодеры,
+Маркетинг и Дизайн, а также `/status`. Быстрый режим отвечает одним прямым
+вызовом локальной модели, а остальные режимы запускают полный агентный
+конвейер. Во время выполнения задачи бот обновляет сообщение с процентом
+готовности.
 
 ## 3. Запустить SKYNET
 

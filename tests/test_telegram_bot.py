@@ -1,12 +1,19 @@
+import asyncio
+
 import pytest
 
 from telegram_bot import (
+    BotState,
+    WORK_MODES,
+    default_mode,
     extract_runner_result,
+    mode_for_chat,
     parse_allowed_user_ids,
     progress_bar,
     progress_percent,
     split_for_telegram,
 )
+from telegram_task_runner import build_fast_payload, ollama_model_name
 
 
 def test_parse_allowed_user_ids_accepts_commas_and_semicolons():
@@ -36,3 +43,29 @@ def test_extract_runner_result_prefers_sentinel_payload():
 
 def test_extract_runner_result_falls_back_to_stdout():
     assert extract_runner_result("plain output") == "plain output"
+
+
+def test_fast_mode_is_available_and_default(monkeypatch):
+    monkeypatch.delenv("TELEGRAM_DEFAULT_MODE", raising=False)
+    state = BotState(queue=asyncio.Queue())
+    assert "fast" in WORK_MODES
+    assert default_mode() == "fast"
+    assert mode_for_chat(state, 123) == "fast"
+
+
+def test_default_mode_ignores_unknown_value(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_DEFAULT_MODE", "unknown")
+    assert default_mode() == "fast"
+
+
+def test_ollama_model_name_strips_litellm_prefix():
+    assert ollama_model_name("ollama/llama3.2:1b") == "llama3.2:1b"
+    assert ollama_model_name("ollama_chat/qwen2.5:3b") == "qwen2.5:3b"
+
+
+def test_build_fast_payload_caps_response(monkeypatch):
+    monkeypatch.setenv("LOCAL_DEFAULT_MODEL", "ollama/llama3.2:1b")
+    monkeypatch.setenv("FAST_MODE_NUM_PREDICT", "128")
+    payload = build_fast_payload("привет")
+    assert payload["model"] == "llama3.2:1b"
+    assert payload["options"]["num_predict"] == 128

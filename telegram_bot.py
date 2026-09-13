@@ -43,6 +43,7 @@ class WorkMode:
 
 
 WORK_MODES: dict[str, WorkMode] = {
+    "fast": WorkMode("fast", "Быстрый", "короткий прямой ответ без полного конвейера агентов", None),
     "auto": WorkMode("auto", "Авто", "SKYNET сам выбирает отдел", None),
     "coders": WorkMode("coders", "Кодеры", "агенты, код, интеграции, деплой", "coders"),
     "marketing": WorkMode("marketing", "Маркетинг", "посты, офферы, SEO, тексты", "marketing"),
@@ -120,7 +121,14 @@ def progress_percent(elapsed: float, timeout: int) -> int:
     return max(5, min(95, int(5 + ratio * 90)))
 
 
-def progress_stage(percent: int) -> str:
+def progress_stage(percent: int, mode: str = "auto") -> str:
+    if mode == "fast":
+        if percent < 25:
+            return "подготовка ответа"
+        if percent < 75:
+            return "локальная модель пишет ответ"
+        return "финальная сборка"
+
     if percent < 15:
         return "подготовка запуска"
     if percent < 35:
@@ -140,12 +148,19 @@ def extract_runner_result(output: str) -> str:
     return output[start + len(RUNNER_RESULT_START) : end].strip()
 
 
+def default_mode() -> str:
+    mode = os.environ.get("TELEGRAM_DEFAULT_MODE", "fast").strip().lower()
+    return mode if mode in WORK_MODES else "fast"
+
+
 def mode_for_chat(state: BotState, chat_id: int) -> str:
-    mode = state.chat_modes.get(chat_id, "auto")
-    return mode if mode in WORK_MODES else "auto"
+    mode = state.chat_modes.get(chat_id, default_mode())
+    return mode if mode in WORK_MODES else default_mode()
 
 
-def mode_keyboard(selected_mode: str = "auto") -> InlineKeyboardMarkup:
+def mode_keyboard(selected_mode: str | None = None) -> InlineKeyboardMarkup:
+    selected_mode = selected_mode or default_mode()
+
     def button(mode: str) -> InlineKeyboardButton:
         label = WORK_MODES[mode].label
         if mode == selected_mode:
@@ -154,7 +169,7 @@ def mode_keyboard(selected_mode: str = "auto") -> InlineKeyboardMarkup:
 
     return InlineKeyboardMarkup(
         [
-            [button("auto")],
+            [button("fast"), button("auto")],
             [button("coders"), button("marketing"), button("design")],
             [InlineKeyboardButton("Статус", callback_data="status")],
         ]
@@ -168,6 +183,8 @@ def mode_text(selected_mode: str) -> str:
         "",
         f"Сейчас: {mode.label}",
         mode.description,
+        "",
+        "Быстрый режим подходит для обычных вопросов. Отделы запускают полный агентный конвейер и работают дольше.",
         "",
         "После выбора просто отправь задачу обычным сообщением.",
     ]
@@ -246,7 +263,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user_id = update.effective_user.id if update.effective_user else "unknown"
     await message.reply_text(
         "SKYNET на связи.\n\n"
-        "Выбери режим кнопками ниже или оставь Авто. Потом отправь задачу обычным сообщением, "
+        "Выбери режим кнопками ниже или оставь Быстрый. Потом отправь задачу обычным сообщением, "
         "а я покажу прогресс и пришлю результат сюда.\n\n"
         f"Твой Telegram ID: {user_id}",
         reply_markup=mode_keyboard(selected_mode),
@@ -263,7 +280,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/id - показать твой Telegram ID\n"
         "/mode - кнопки режимов работы\n"
         "/status - текущая задача и очередь\n\n"
-        "Все остальные текстовые сообщения считаются заданиями для агентов."
+        "Все остальные текстовые сообщения считаются заданиями SKYNET."
     )
 
 
@@ -363,15 +380,17 @@ async def task_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     position = state.queue.qsize()
     label = WORK_MODES[selected_mode].label
+    action = "Готовлю ответ" if selected_mode == "fast" else "Запускаю агентов"
     if state.current:
         await message.reply_text(f"Принял задачу #{task.id}. Режим: {label}. В очереди перед ней: {position - 1}.")
     else:
-        await message.reply_text(f"Принял задачу #{task.id}. Режим: {label}. Запускаю агентов.")
+        await message.reply_text(f"Принял задачу #{task.id}. Режим: {label}. {action}.")
 
 
 async def typing_pulse(application: Application, chat_id: int) -> None:
     while True:
-        await application.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+        with contextlib.suppress(TelegramError):
+            await application.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
         await asyncio.sleep(4)
 
 
@@ -385,7 +404,7 @@ async def progress_pulse(
     while True:
         elapsed = time.time() - (task.started_at or time.time())
         task.progress = progress_percent(elapsed, timeout)
-        task.stage = progress_stage(task.progress)
+        task.stage = progress_stage(task.progress, task.mode)
         text = (
             f"Задача #{task.id} в работе\n"
             f"Режим: {WORK_MODES[task.mode].label}\n"
